@@ -8,7 +8,6 @@ var fs = require("fs");
 
 var app = express();
 
-var resources = require("./getresources.js");
 var settings = require("./settings.json");
 
 catapult.Client.globalOptions.userId = settings.userId;
@@ -71,7 +70,7 @@ var argsParse = function(request) {
   } else if (queryObject.query.indexOf(' fact', queryObject.query.length - ' fact'.length) !== -1) {
     queryObject.fact = true;
     queryObject.query = queryObject.query.slice(0, queryObject.query.length - ' fact'.length);
-  } else if (queryObject.query.indexOf('(') >= -1) {
+  } else if (queryObject.query.indexOf('(') > -1) {
     queryObject.topic = queryObject.query.slice(queryObject.query.indexOf('(')+1, queryObject.query.lastIndexOf(')'));
     queryObject.query = queryObject.query.slice(0, queryObject.query.indexOf('(')).trim();
     console.log(queryObject);

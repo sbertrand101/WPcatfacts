@@ -35,7 +35,8 @@ app.listen(process.env.PORT || 8000);
 
 var promptings = function() {
   prompt.get('string', function(err, output) {
-    argsParse(output.string, 'console');
+    var qo = argsParse(output.string, 'console');
+    startQuery(qo);
   });
 }
 
@@ -83,6 +84,9 @@ var startQuery = function(queryObject) {
     if (parsed && (parsed.type === 'redirect')) {
       queryObject.query = parsed.redirect;
       startQuery(queryObject);
+    } else if (parsed.type === 'disambiguation') {
+      queryObject.query = parsed.pages[0];
+      startQuery(queryObject);
     } else if (parsed.type === 'page' && Object.keys(parsed.text).length === 0) {
       var errorMessage = "I don't know about " + queryObject.query + ". sry :(";
       if (queryObject.from === 'console') {
@@ -94,7 +98,6 @@ var startQuery = function(queryObject) {
     } else {
       queryObject.parsed = parsed;
       queryObject.markup = markup;
-      console.log("query query query: " + queryObject);
       functions[queryObject.queryType](queryObject);
     }
   });
@@ -111,17 +114,22 @@ var getWPData = function(queryObject) {
 }
 
 var sendMessage = function(text, from) {
+  if (from === 'console') {
+    console.log('Sending: ' + text);
+    promptings();
+  } else {
     catapult.Message.create({from:hostnumber, to: from, text: text}, function(err, msg) {
-    if(err) {
-      return console.log("gg " + err.message);
-    }
-    console.log("message id is" + msg.id)
-  });
+      if(err) {
+        return console.log("gg " + err.message);
+      }
+      console.log("message id is" + msg.id)
+    });
+  }
 }
 
 var formatText = function(text, query) {
   var formattedText = text.slice(0,2000);
-  if (formattedText.toLowerCase().slice(0,159).indexOf('taxobox')) {
+  if (formattedText.toLowerCase().slice(0,159).indexOf('taxobox') > 0) {
     console.log('cutting');
     var slice = Math.max(formattedText.lastIndexOf('}'),
                     formattedText.lastIndexOf('|'),
@@ -140,7 +148,7 @@ var getWPImageURL = function(queryObject) {
   imageRegex = /[:|=][^:|=]+.((jpg)|(png))/
   var match = imageRegex.exec(queryObject.markup);
   console.log('matching with' + match);
-  console.log('output startwith' + output.slice(0,200));
+  console.log('output startwith' + queryObject.markup.slice(0,200));
   if(match) {
     var title = 'File:' + match[0].slice(1);
     console.log(title);
@@ -161,7 +169,7 @@ var getWPImageURL = function(queryObject) {
         var page = Object.keys(data.query.pages)[0];
         console.log(data.query.pages);
         var imgurl = data.query.pages[page].imageinfo[0].thumburl;
-        getWPImage(imgurl, title, queryObject.query, queryObjectfrom);
+        getWPImage(imgurl, title, queryObject.query, queryObject.from);
       } else {
         console.error('nop');
       }
@@ -191,13 +199,17 @@ var getWPImage = function(url, title, query, from) {
 }
 
 var sendMMSMessage = function(catapultUrl, title, query, from) {
-  console.log('title is: ' + title);
+  if (from === 'console') {
+    console.log('title is: ' + title);
+    promptings();
+  } else {
     catapult.Message.create({from:hostnumber, to: from, text: title, media: catapultUrl}, function(err, msg) {
-    if(err) {
-      return console.log("gg " + err.message);
-    }
-    console.log("message id is" + msg.id)
-  });
+      if(err) {
+        return console.log("gg " + err.message);
+      }
+      console.log("message id is" + msg.id)
+    });
+  }
 };
 
 var getWPTopics = function(queryObject) {

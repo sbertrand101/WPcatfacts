@@ -1,0 +1,1 @@
+This is a node.js app that uses the Bandwidth catapult API to give you succint information about any topic over SMS.  It relies predominantly on Wikipedia, so basically it's a wikipedia interface for when you don't have 3G.

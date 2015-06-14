@@ -22,7 +22,8 @@ app.use(bodyParser.urlencoded({
 }));
 
 app.post("/events/sms", function(req, res, next) {
-  startQuery(req.body.text, req.body.from);
+  var qo = argsParse(req.body.text, req.body.from);
+  startQuery(qo);
   res.send({});
 });
 
@@ -30,78 +31,84 @@ app.get("/", function(req, res) {
   res.send("there is a website here");
 });
 
-console.log("start");
 app.listen(process.env.PORT || 8000);
 
-var startQuery = function(text, from) {
-  var queryObject = argsParse(text);
-  console.log("query is: " + queryObject.query);
-  console.log(queryObject);
-  console.log(from + ' is asking about ' + text);
-  if (queryObject.picture) {
-    getWPImageURL(queryObject.query, from);
-  } else if (queryObject.topics) {
-    getWPTopics(queryObject.query, from);
-  } else if (queryObject.topic) {
-    getWPTopic(queryObject.query, queryObject.topic, from)
-  } else if (queryObject.fact) {
-    getWPFact(queryObject.query, from);
-  } else {
-    getWPData(queryObject.query, from);
-  }
+var promptings = function() {
+  prompt.get('string', function(err, output) {
+    argsParse(output.string, 'console');
+  });
 }
 
-var argsParse = function(request) {
+prompt.start();
+
+console.log("gogo awesome");
+promptings();
+
+var argsParse = function(text, from) {
   var queryObject = {};
-  queryObject.query = request;
-  // var args = request.split(' ');
-  // for (arg in args) {
-  //   if (args[arg][0] === '-') {
-  //     queryObject[args[arg].slice(1)] = true;
-  //   }
-  // }
-  // queryObject.query = request.replace(/-[^\s]*/, '');
+  queryObject.query = text;
+  queryObject.from = from;
   if (queryObject.query.indexOf(' picture', queryObject.query.length - ' picture'.length) !== -1) {
-    queryObject.picture = true;
+    queryObject.queryType = 'picture';
     queryObject.query = queryObject.query.slice(0, queryObject.query.length - ' picture'.length);
   } else if (queryObject.query.indexOf(' topics', queryObject.query.length - ' topics'.length) !== -1) {
-    queryObject.topics = true;
+    queryObject.queryType = 'topics';
     queryObject.query = queryObject.query.slice(0, queryObject.query.length - ' topics'.length);
   } else if (queryObject.query.indexOf(' fact', queryObject.query.length - ' fact'.length) !== -1) {
-    queryObject.fact = true;
+    queryObject.queryType = 'fact';
     queryObject.query = queryObject.query.slice(0, queryObject.query.length - ' fact'.length);
   } else if (queryObject.query.indexOf('(') > -1) {
+    queryObject.queryType = 'topic';
     queryObject.topic = queryObject.query.slice(queryObject.query.indexOf('(')+1, queryObject.query.lastIndexOf(')'));
     queryObject.query = queryObject.query.slice(0, queryObject.query.indexOf('(')).trim();
-    console.log(queryObject);
+  } else {
+    queryObject.queryType = 'data';
   }
+  console.log(queryObject);
   return queryObject;
 }
 
-var getWPData = function(query, from) {
-  wikipedia.from_api(query, "en", function(markup){
-    var output = wikipedia.parse(markup);
-    if (output && (output.type === 'redirect')) {
-      getWPData(output.redirect, from);
-    } else if (output.type === 'page' && Object.keys(output.text).length === 0) {
-      if (from === 'console') {
-        console.log("I don't know about " + query + ". sry :(");
-        promptings();         
+var startQuery = function(queryObject) {
+  var functions = {
+    picture: getWPImageURL,
+    topics: getWPTopics,
+    topic: getWPTopic,
+    fact: getWPFact,
+    data: getWPData
+  }
+  console.log(queryObject.from + ' is asking about ' + queryObject.query);
+
+  wikipedia.from_api(queryObject.query, "en", function(markup) {
+    var parsed = wikipedia.parse(markup);
+    if (parsed && (parsed.type === 'redirect')) {
+      queryObject.query = parsed.redirect;
+      startQuery(queryObject);
+    } else if (parsed.type === 'page' && Object.keys(parsed.text).length === 0) {
+      var errorMessage = "I don't know about " + queryObject.query + ". sry :(";
+      if (queryObject.from === 'console') {
+        console.log(errorMessage);
+        promptings();
       } else {
-        sendMessage("I don't know about " + query + ". sry :(", from);
+        sendMessage(errorMessage, queryObject.from)
       }
     } else {
-      console.log("output text is: " + output.text);
-      var formattedText = formatText(wikipedia.plaintext(markup), query);
-      if(from === 'console') {
-        console.log('Formatted to: ' + formattedText);
-        promptings(); 
-      } else {
-        sendMessage(formattedText, from);
-      }
+      queryObject.parsed = parsed;
+      queryObject.markup = markup;
+      console.log("query query query: " + queryObject);
+      functions[queryObject.queryType](queryObject);
     }
   });
-};
+}
+
+var getWPData = function(queryObject) {
+  var formattedText = formatText(wikipedia.plaintext(queryObject.markup), queryObject.query);
+  if(queryObject.from === 'console') {
+    console.log('Formatted to: ' + formattedText);
+    promptings(); 
+  } else {
+    sendMessage(formattedText, queryObject.from);
+  }
+}
 
 var sendMessage = function(text, from) {
     catapult.Message.create({from:hostnumber, to: from, text: text}, function(err, msg) {
@@ -129,56 +136,40 @@ var formatText = function(text, query) {
   return formattedText;
 }
 
-var promptings = function() {
-  prompt.get('string', function(err, output) {
-    startQuery(output.string, 'console');
-  });
-}
-
-prompt.start();
-promptings();
-
-var getWPImageURL = function(query, from) {
-  wikipedia.from_api(query, "en", function(output) {
-    var parsed = wikipedia.parse(output);
-    if (parsed.type === 'redirect') {
-      getWPImageURL(parsed.redirect, from);
-    } else {
-      imageRegex = /[:|=][^:|=]+.((jpg)|(png))/
-      var match = imageRegex.exec(output);
-      console.log('matching with' + match);
-      console.log('output startwith' + output.slice(0,200));
-      if(match) {
-        var title = 'File:' + match[0].slice(1);
-        console.log(title);
-        var options = {
-          url: "http://commons.wikimedia.org/w/api.php",
-          qs: {
-            action: 'query',
-            titles: title,
-            prop: 'imageinfo',
-            iiprop: 'url',
-            iiurlwidth: '640px',
-            format: 'json' 
-          }
-        }
-        request(options, function(err, res, body) {
-          if(!err && res.statusCode === 200) {
-            var data = JSON.parse(body);
-            var page = Object.keys(data.query.pages)[0];
-            console.log(data.query.pages);
-            var imgurl = data.query.pages[page].imageinfo[0].thumburl;
-            getWPImage(imgurl, title, query, from);
-          } else {
-            console.error('nop');
-          }
-        });
-      } else {
-        //console.log(page);
-        sendMessage("No Images Available. Sry :(", from);
-      }     
+var getWPImageURL = function(queryObject) {
+  imageRegex = /[:|=][^:|=]+.((jpg)|(png))/
+  var match = imageRegex.exec(queryObject.markup);
+  console.log('matching with' + match);
+  console.log('output startwith' + output.slice(0,200));
+  if(match) {
+    var title = 'File:' + match[0].slice(1);
+    console.log(title);
+    var options = {
+      url: "http://commons.wikimedia.org/w/api.php",
+      qs: {
+        action: 'query',
+        titles: title,
+        prop: 'imageinfo',
+        iiprop: 'url',
+        iiurlwidth: '640px',
+        format: 'json' 
+      }
     }
-  });  
+    request(options, function(err, res, body) {
+      if(!err && res.statusCode === 200) {
+        var data = JSON.parse(body);
+        var page = Object.keys(data.query.pages)[0];
+        console.log(data.query.pages);
+        var imgurl = data.query.pages[page].imageinfo[0].thumburl;
+        getWPImage(imgurl, title, queryObject.query, queryObjectfrom);
+      } else {
+        console.error('nop');
+      }
+    });
+  } else {
+    //console.log(page);
+    sendMessage("No Images Available. Sry :(", from);
+  }     
 }
 
 var getWPImage = function(url, title, query, from) {
@@ -209,57 +200,32 @@ var sendMMSMessage = function(catapultUrl, title, query, from) {
   });
 };
 
-var getWPTopics = function(query, from) {
-  wikipedia.from_api(query, "en", function(output) {
-    var parsed = wikipedia.parse(output);
-    if (parsed.type === 'redirect') {
-      getWPTopics(parsed.redirect, from);
-    } else {
-      // console.log(Object.keys(parsed.text).map(function(key) {
-      //   var locSecondSpace = key.indexOf(' ', (key.indexOf(' ')+1)+1);
-      //   return key.slice(0, (locSecondSpace > 0) ? locSecondSpace : key.length);
-      // }).join(', ').slice(0,159));
-
-      sendMessage(Object.keys(parsed.text).map(function(key){
-        var locSecondSpace = key.indexOf(' ', (key.indexOf(' ')+1)+1);
-        return key.slice(0, (locSecondSpace > 0) ? locSecondSpace : key.length)
-      }).join(', ').slice(0,159), from);
-    }
-  });    
-};
-
-var getWPTopic = function(query, topic, from) {
-  wikipedia.from_api(query, "en", function(output) {
-    var parsed = wikipedia.parse(output);
-      if (parsed.type === 'redirect') {
-        getWPTopic(parsed.redirect, topic, from);
-      } else {
-        var keys = Object.keys(parsed.text);
-        var normkeys = Object.keys(parsed.text).map(function(key) {
-          var locSecondSpace = key.indexOf(' ', (key.indexOf(' ')+1)+1);
-          return key.slice(0, (locSecondSpace > 0) ? locSecondSpace : key.length).toLowerCase();
-        });
-        var topicKeyIndex = 0;
-        for (k in normkeys) {
-          if(normkeys[k].indexOf(topic.toLowerCase()) > -1) {
-            topicKeyIndex = k;
-          }
-        }
-        sendMessage(parsed.text[keys[topicKeyIndex]][0].text.slice(0, 159), from);
-      }
-  });
+var getWPTopics = function(queryObject) {
+  sendMessage(Object.keys(queryObject.parsed.text).map(function(key){
+    var locSecondSpace = key.indexOf(' ', (key.indexOf(' ')+1)+1);
+    return key.slice(0, (locSecondSpace > 0) ? locSecondSpace : key.length)
+  }).join(', ').slice(0,159), queryObject.from);
 }
 
-var getWPFact = function(query, from) {
-  wikipedia.from_api(query, "en", function(output) {
-    var parsed = wikipedia.parse(output);
-    if (parsed.type === 'redirect') {
-      getWPFact(parsed.redirect, from);
-    } else {
-      var keyIndex = Math.floor(Math.random()*Object.keys(parsed.text).length);
-      var key = Object.keys(parsed.text)[keyIndex];
-      var factIndex = Math.floor(Math.random()*parsed.text[key].length);
-      sendMessage(parsed.text[key][factIndex].text.slice(0,159), from);
-    }
+
+var getWPTopic = function(queryObject) {
+  var keys = Object.keys(queryObject.parsed.text);
+  var normkeys = Object.keys(queryObject.parsed.text).map(function(key) {
+    var locSecondSpace = key.indexOf(' ', (key.indexOf(' ')+1)+1);
+    return key.slice(0, (locSecondSpace > 0) ? locSecondSpace : key.length).toLowerCase();
   });
+  var topicKeyIndex = 0;
+  for (k in normkeys) {
+    if(normkeys[k].indexOf(queryObject.topic.toLowerCase()) > -1) {
+      topicKeyIndex = k;
+    }
+  }
+  sendMessage(queryObject.parsed.text[keys[topicKeyIndex]][0].text.slice(0, 159), queryObject.from);
+}
+
+var getWPFact = function(queryObject) {
+  var keyIndex = Math.floor(Math.random()*Object.keys(queryObject.parsed.text).length);
+  var key = Object.keys(queryObject.parsed.text)[keyIndex];
+  var factIndex = Math.floor(Math.random()*queryObject.parsed.text[key].length);
+  sendMessage(queryObject.parsed.text[key][factIndex].text.slice(0,159), queryObject.from);
 }

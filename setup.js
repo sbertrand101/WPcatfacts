@@ -5,9 +5,9 @@ var PhoneNumber = Promise.promisifyAll(catapult.PhoneNumber);
 var AvailableNumber = Promise.promisifyAll(catapult.AvailableNumber);
 
 // Searches through application names and returns ID if matched
-var searchForApplication = function (applications, name) {
+var searchForApplication = function (applications, config) {
 	for (var i = 0; i < applications.length; i+=1) {
-			if ( applications[i].name === name) {
+			if ( applications[i].name === config.appName) {
 				return applications[i].id;
 			}
 		}
@@ -15,26 +15,26 @@ var searchForApplication = function (applications, name) {
 };
 
 // Gets the first number associated with an application
-var fetchTNByAppId = function (applicationId) {
+var fetchTNByAppId = function (applicationId, config) {
 	return PhoneNumber.listAsync({
 		applicationId: applicationId
 	})
 	.then(function (numbers) {
-		app.tn = numbers[0].number;
-		console.log('Found Number: ' + app.tn);
-		return app.tn;
+		config.app.tn = numbers[0].number;
+		console.log('Found Number: ' + config.app.tn);
+		return config.app.tn;
 	});
 };
 
 // Creates a new application then orders a number and assigns it to application
-var newApplication =function (appName, url) {
+var newApplication =function (config) {
 	var applicationId;
 	return Application.createAsync({
 			name: appName,
-			incomingMessageUrl: url + '/msgcallback/',
-			incomingCallUrl: url + '/callcallback/',
-			callbackHttpMethod: 'get',
-			autoAnswer: true
+			incomingMessageUrl: config.app.callbackUrl + '/msgcallback/',
+			incomingCallUrl: config.app.callbackUrl + '/callcallback/',
+			callbackHttpMethod: 'post',
+			autoAnswer: false
 		})
 		.then(function(application) {
 			//search an available number
@@ -48,28 +48,30 @@ var newApplication =function (appName, url) {
 		.then(function(numbers) {
 			// and reserve it
 			console.log('Found Number: ' + numbers[0].number);
-			app.tn = numbers[0].number;
+			config.app.tn = numbers[0].number;
 			return PhoneNumber.createAsync({
-				number: app.tn,
+				number: config.app.tn,
 				applicationId: applicationId
 			});
 		});
 };
 
 //Checks the current Applications to see if we have one.
-var configureApplication = function (appName, appCallbackUrl) {
+//var configureApplication = function (appName, appCallbackUrl) {
+var configureApplication = function (config) {
 	return Application.listAsync({
 		size: 1000
 	})
 	.then(function (applications) {
-		var applicationId = searchForApplication(applications, appName);
+		//var applicationId = searchForApplication(applications, appName);
+		var applicationId = searchForApplication(applications, config);
 		if(applicationId !== false) {
 			console.log('Application Found');
-			return fetchTNByAppId(applicationId);
+			return fetchTNByAppId(applicationId, config);
 		}
 		else {
 			console.log('No Application Found');
-			return newApplication(appName, appCallbackUrl);
+			return newApplication(config);
 		}
 	});
 };
@@ -89,7 +91,7 @@ var makeWebPage = function (phoneNumber, res) {
 
 module.exports.init = function (config) {
 	if (config.app.tn === undefined) {
-		configureApplication(config.appName, config.app.callbackUrl)
+		configureApplication(config)
 		.then(function () {
 			makeWebPage(config.app.tn, config.res);
 		})

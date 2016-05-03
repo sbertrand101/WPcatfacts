@@ -46,9 +46,9 @@ var sendMMSMessage = function (catapultUrl, title, query, queryObject) {
 
 var argsParse = function (req) {
 	var queryObject = {
-		query: req.text.trim().toLowerCase(),
-		from: req.from,
-		to: req.to
+		query: req.body.text.trim().toLowerCase(),
+		from: req.body.from,
+		to: req.body.to
 	};
 	if (queryObject.query.indexOf(' picture', queryObject.query.length - ' picture'.length) !== -1) {
 		queryObject.queryType = 'picture';
@@ -220,6 +220,7 @@ var startQuery = function (queryObject) {
 
 app.post('/msgcallback', function (req, res) {
 	var qo = argsParse(req);
+	console.log(req);
 	startQuery(qo);
 	res.send(201);
 });
@@ -229,7 +230,6 @@ var getBaseUrlFromReq = function (req) {
 };
 
 app.get('/', function (req, res) {
-	console.log('hi');
 	app.callbackUrl = getBaseUrlFromReq(req);
 	setup.init({
 		req: req,

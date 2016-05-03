@@ -1,59 +1,55 @@
+var setup = require('./setup.js');
 var express = require('express');
 var catapult = require('node-bandwidth');
 var bodyParser = require('body-parser');
 var wikipedia = require('wtf_wikipedia');
 var request = require('request');
-
 var app = express();
-
-var settings = require('./settings.json');
+var http = require('http').Server(app);
 
 catapult.Client.globalOptions.userId = process.env.CATAPULT_USER_ID;
 catapult.Client.globalOptions.apiToken = process.env.CATAPULT_API_TOKEN;
 catapult.Client.globalOptions.apiSecret = process.env.CATAPULT_API_SECRET;
 
-var hostnumber = settings.hostnumber;
-
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({
 	extended: true
 }));
+app.set('port', (process.env.PORT || 8000));
 
-var sendMessage = function (text, from) {
-	if (from === 'console') {
-		console.log('Sending: ' + text);
-	} else {
-		catapult.Message.create({
-			from: hostnumber,
-			to: from,
-			text: text
-		}, function (err, msg) {
-			if (err) {
-				return console.log('gg ' + err.message);
-			}
-			console.log('message id is' + msg.id);
-		});
-	}
+var sendMessage = function (text, queryObject) {
+	catapult.Message.create({
+		from: queryObject.to,
+		to: queryObject.from,
+		text: text
+	}, function (err, msg) {
+		if (err) {
+			return console.error('Error:  ' + err.message);
+		}
+		console.log('message id is' + msg.id);
+	});
 };
 
-var sendMMSMessage = function (catapultUrl, title, query, from) {
+var sendMMSMessage = function (catapultUrl, title, query, queryObject) {
 	catapult.Message.create({
-		from: hostnumber,
-		to: from,
+		from: queryObject.to,
+		to: queryObject.from,
 		text: title,
 		media: catapultUrl
 	}, function (err, msg) {
 		if (err) {
-			return console.error('gg ' + err.message);
+			return console.error('Error:  ' + err.message);
 		}
 		console.log('message id is: ' + msg.id);
 	});
 };
 
-var argsParse = function (text, from) {
-	var queryObject = {};
-	queryObject.query = text;
-	queryObject.from = from;
+var argsParse = function (req) {
+	var queryObject = {
+		query: req.text.trim().toLowerCase(),
+		from: req.from,
+		to: req.to
+	};
 	if (queryObject.query.indexOf(' picture', queryObject.query.length - ' picture'.length) !== -1) {
 		queryObject.queryType = 'picture';
 		queryObject.query = queryObject.query.slice(0, queryObject.query.length - ' picture'.length);
@@ -96,11 +92,11 @@ var getWPData = function (queryObject) {
 	if (queryObject.from === 'console') {
 		console.log('Formatted to: ' + formattedText);
 	} else {
-		sendMessage(formattedText, queryObject.from);
+		sendMessage(formattedText, queryObject);
 	}
 };
 
-var getWPImage = function (url, title, query, from) {
+var getWPImage = function (url, title, query, queryObject) {
 	var titleNoSpaces = title.replace(/ /g, '');
 	request({url: url}, function (err) {
 		if (err) {
@@ -120,7 +116,7 @@ var getWPImage = function (url, title, query, from) {
 		} else {
 			var catapultUrl = res.req.res.request.href;
 			console.log(catapultUrl);
-			sendMMSMessage(catapultUrl, title, query, from);
+			sendMMSMessage(catapultUrl, title, query, queryObject);
 		}
 	}));
 };
@@ -150,13 +146,13 @@ var getWPImageURL = function (queryObject) {
 				var page = Object.keys(data.query.pages)[0];
 				console.log(data.query.pages);
 				var imgurl = data.query.pages[page].imageinfo[0].thumburl;
-				getWPImage(imgurl, title, queryObject.query, queryObject.from);
+				getWPImage(imgurl, title, queryObject.query, queryObject);
 			} else {
 				console.error('nop');
 			}
 		});
 	} else {
-		sendMessage('No Images Available. Sry :(', queryObject.from);
+		sendMessage('No Images Available. Sry :(', queryObject);
 	}
 };
 
@@ -164,7 +160,7 @@ var getWPTopics = function (queryObject) {
 	sendMessage(Object.keys(queryObject.parsed.text).map(function (key) {
 		var locSecondSpace = key.indexOf(' ', (key.indexOf(' ') + 1) + 1);
 		return key.slice(0, (locSecondSpace > 0) ? locSecondSpace : key.length);
-	}).join(', ').slice(0, 159), queryObject.from);
+	}).join(', ').slice(0, 159), queryObject.from, queryObject);
 };
 
 var getWPTopic = function (queryObject) {
@@ -179,14 +175,14 @@ var getWPTopic = function (queryObject) {
 			topicKeyIndex = k;
 		}
 	}
-	sendMessage(queryObject.parsed.text[keys[topicKeyIndex]][0].text.slice(0, 159), queryObject.from);
+	sendMessage(queryObject.parsed.text[keys[topicKeyIndex]][0].text.slice(0, 159), queryObject);
 };
 
 var getWPFact = function (queryObject) {
 	var keyIndex = Math.floor(Math.random() * Object.keys(queryObject.parsed.text).length);
 	var key = Object.keys(queryObject.parsed.text)[keyIndex];
 	var factIndex = Math.floor(Math.random() * queryObject.parsed.text[key].length);
-	sendMessage(queryObject.parsed.text[key][factIndex].text.slice(0, 159), queryObject.from);
+	sendMessage(queryObject.parsed.text[key][factIndex].text.slice(0, 159), queryObject);
 };
 
 var startQuery = function (queryObject) {
@@ -212,7 +208,7 @@ var startQuery = function (queryObject) {
 			if (queryObject.from === 'console') {
 				console.log(errorMessage);
 			} else {
-				sendMessage(errorMessage, queryObject.from);
+				sendMessage(errorMessage, queryObject);
 			}
 		} else {
 			queryObject.parsed = parsed;
@@ -222,14 +218,27 @@ var startQuery = function (queryObject) {
 	});
 };
 
-app.post('/events/sms', function (req, res) {
-	var qo = argsParse(req.body.text, req.body.from);
+app.post('/msgcallback', function (req, res) {
+	var qo = argsParse(req);
 	startQuery(qo);
-	res.send({});
+	res.send(201);
 });
+
+var getBaseUrlFromReq = function (req) {
+	return 'http://' + req.hostname;
+};
 
 app.get('/', function (req, res) {
-	res.send('there is a website here');
+	console.log('hi');
+	app.callbackUrl = getBaseUrlFromReq(req);
+	setup.init({
+		req: req,
+		res: res,
+		app: app,
+		appName: 'WikiText-' + app.callbackUrl
+	});
 });
 
-app.listen(process.env.PORT || 8000);
+http.listen(app.get('port'), function () {
+	console.log('listening on *:' + app.get('port'));
+});

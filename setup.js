@@ -30,7 +30,7 @@ var fetchTNByAppId = function (applicationId, config) {
 var newApplication =function (config) {
 	var applicationId;
 	return Application.createAsync({
-			name: appName,
+			name: config.appName,
 			incomingMessageUrl: config.app.callbackUrl + '/msgcallback/',
 			incomingCallUrl: config.app.callbackUrl + '/callcallback/',
 			callbackHttpMethod: 'post',

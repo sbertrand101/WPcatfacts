@@ -225,8 +225,8 @@ var startQuery = function (queryObject) {
 
 app.post('/msgcallback', function (req, res) {
 	var qo = argsParse(req);
-	startQuery(qo);
 	res.sendStatus(201);
+	startQuery(qo);
 });
 
 var getBaseUrlFromReq = function (req) {

@@ -46,23 +46,23 @@ var sendMMSMessage = function (catapultUrl, title, query, queryObject) {
 
 var argsParse = function (req) {
 	var queryObject = {
-		query: req.body.text.trim().toLowerCase().replace(/ /g, '_'),
+		query: req.body.text.trim(),
 		from: req.body.from,
 		to: req.body.to
 	};
-	if (queryObject.query.indexOf(' picture', queryObject.query.length - ' picture'.length) !== -1) {
+	if (queryObject.query.toLowerCase().indexOf(' picture', queryObject.query.length - ' picture'.length) !== -1) {
 		queryObject.queryType = 'picture';
-		queryObject.query = queryObject.query.slice(0, queryObject.query.length - ' picture'.length);
-	} else if (queryObject.query.indexOf(' topics', queryObject.query.length - ' topics'.length) !== -1) {
+		queryObject.query = queryObject.query.slice(0, queryObject.query.length - ' picture'.length).replace(/ /g, '_');
+	} else if (queryObject.query.toLowerCase().indexOf(' topics', queryObject.query.length - ' topics'.length) !== -1) {
 		queryObject.queryType = 'topics';
-		queryObject.query = queryObject.query.slice(0, queryObject.query.length - ' topics'.length);
-	} else if (queryObject.query.indexOf(' fact', queryObject.query.length - ' fact'.length) !== -1) {
+		queryObject.query = queryObject.query.slice(0, queryObject.query.length - ' topics'.length).replace(/ /g, '_');
+	} else if (queryObject.query.toLowerCase().indexOf(' fact', queryObject.query.length - ' fact'.length) !== -1) {
 		queryObject.queryType = 'fact';
-		queryObject.query = queryObject.query.slice(0, queryObject.query.length - ' fact'.length);
-	} else if (queryObject.query.indexOf('(') > -1) {
+		queryObject.query = queryObject.query.slice(0, queryObject.query.length - ' fact'.length).replace(/ /g, '_');
+	} else if (queryObject.query.toLowerCase().indexOf('(') > -1) {
 		queryObject.queryType = 'topic';
 		queryObject.topic = queryObject.query.slice(queryObject.query.indexOf('(') + 1, queryObject.query.lastIndexOf(')'));
-		queryObject.query = queryObject.query.slice(0, queryObject.query.indexOf('(')).trim();
+		queryObject.query = queryObject.query.slice(0, queryObject.query.indexOf('(')).trim().replace(/ /g, '_');
 	} else {
 		queryObject.queryType = 'data';
 	}

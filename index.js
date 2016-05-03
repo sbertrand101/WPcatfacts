@@ -22,7 +22,7 @@ app.set('port', (process.env.PORT || 8000));
 var sendMessage = function (text, queryObject) {
 	var tokenizer = new Tokenizer('Chuck');
 	tokenizer.setEntry(text);
-	text = tokenizer.getSentences()[0] + tokenizer.getSentences()[1];
+	text = tokenizer.getSentences()[0] + ' ' + tokenizer.getSentences()[1];
 	catapult.Message.create({
 		from: queryObject.to,
 		to: queryObject.from,

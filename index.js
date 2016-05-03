@@ -46,7 +46,7 @@ var sendMMSMessage = function (catapultUrl, title, query, queryObject) {
 
 var argsParse = function (req) {
 	var queryObject = {
-		query: req.body.text.trim().toLowerCase(),
+		query: req.body.text.trim().toLowerCase().replace(/ /g, '_'),
 		from: req.body.from,
 		to: req.body.to
 	};
@@ -195,7 +195,7 @@ var startQuery = function (queryObject) {
 	};
 	console.log(queryObject.from + ' is asking about ' + queryObject.query);
 
-	wikipedia.from_api('"' + queryObject.query + '"', 'en', function (markup) {
+	wikipedia.from_api(queryObject.query, 'en', function (markup) {
 		var parsed = wikipedia.parse(markup);
 		if (parsed && (parsed.type === 'redirect')) {
 			queryObject.query = parsed.redirect;
@@ -221,7 +221,7 @@ var startQuery = function (queryObject) {
 app.post('/msgcallback', function (req, res) {
 	var qo = argsParse(req);
 	startQuery(qo);
-	res.send(201);
+	res.sendStatus(201);
 });
 
 var getBaseUrlFromReq = function (req) {

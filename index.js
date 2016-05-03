@@ -29,7 +29,7 @@ var sendMessage = function (text, queryObject) {
 		text: text
 	}, function (err, msg) {
 		if (err) {
-			return console.error('Error:  ' + err.message);
+			throw err;
 		}
 		console.log('message id is' + msg.id);
 	});
@@ -43,7 +43,7 @@ var sendMMSMessage = function (catapultUrl, title, query, queryObject) {
 		media: catapultUrl
 	}, function (err, msg) {
 		if (err) {
-			return console.error('Error:  ' + err.message);
+			throw err;
 		}
 		console.log('message id is: ' + msg.id);
 	});
@@ -225,8 +225,12 @@ var startQuery = function (queryObject) {
 
 app.post('/msgcallback', function (req, res) {
 	var qo = argsParse(req);
+	try {
+		startQuery(qo);
+	} catch (err) {
+		console.error('Error Sending Message: ' + err);
+	}
 	res.sendStatus(201);
-	startQuery(qo);
 });
 
 var getBaseUrlFromReq = function (req) {

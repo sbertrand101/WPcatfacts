@@ -29,5 +29,8 @@
     "prompt": "^0.2.14",
     "request": "^2.57.0",
     "wtf_wikipedia": "^0.1.5"
+  },
+  "devDependencies": {
+    "eslint-config-xo": "^0.14.1"
   }
 }

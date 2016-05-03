@@ -5,7 +5,6 @@ App that leverages the [Bandwidth catapult API](http://ap.bandwidth.com//?utm_me
 Demos uses of the:
 * [Catapult Node SDK](https://github.com/bandwidthcom/node-bandwidth)
 * [Creating Application](http://ap.bandwidth.com/docs/rest-api/applications/?utm_medium=social&utm_source=github&utm_campaign=dtolb&utm_content=_)
-* [BXML](http://ap.bandwidth.com/docs/xml/?utm_medium=social&utm_source=github&utm_campaign=dtolb&utm_content=_)
 * [Searching for Phone Number](http://ap.bandwidth.com/docs/rest-api/available-numbers/#resourceGETv1availableNumberslocal/?utm_medium=social&utm_source=github&utm_campaign=dtolb&utm_content=_)
 * [Ordering Phone Number](http://ap.bandwidth.com/docs/rest-api/phonenumbers/#resourcePOSTv1usersuserIdphoneNumbers/?utm_medium=social&utm_source=github&utm_campaign=dtolb&utm_content=_)
 * [Sending MMS](http://ap.bandwidth.com/docs/rest-api/messages/#resourcePOSTv1usersuserIdmessages/?utm_medium=social&utm_source=github&utm_campaign=dtolb&utm_content=_)

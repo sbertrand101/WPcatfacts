@@ -28,9 +28,7 @@
     "node-bandwidth": "^1.0.9",
     "prompt": "^0.2.14",
     "request": "^2.57.0",
+    "sentence-tokenizer": "0.0.7",
     "wtf_wikipedia": "^0.3.2"
-  },
-  "devDependencies": {
-    "eslint-config-xo": "^0.14.1"
   }
 }

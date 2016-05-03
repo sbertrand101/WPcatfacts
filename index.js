@@ -4,6 +4,8 @@ var catapult = require('node-bandwidth');
 var bodyParser = require('body-parser');
 var wikipedia = require('wtf_wikipedia');
 var request = require('request');
+var Tokenizer = require('sentence-tokenizer');
+
 var app = express();
 var http = require('http').Server(app);
 
@@ -18,6 +20,9 @@ app.use(bodyParser.urlencoded({
 app.set('port', (process.env.PORT || 8000));
 
 var sendMessage = function (text, queryObject) {
+	var tokenizer = new Tokenizer('Chuck');
+	tokenizer.setEntry(text);
+	text = tokenizer.getSentences()[0] + tokenizer.getSentences()[1];
 	catapult.Message.create({
 		from: queryObject.to,
 		to: queryObject.from,
@@ -72,7 +77,7 @@ var argsParse = function (req) {
 
 var formatText = function (text, query) {
 	var formattedText = text.slice(0, 2000);
-	if (formattedText.toLowerCase().slice(0, 159).indexOf('taxobox') > 0) {
+	if (formattedText.toLowerCase().slice(0, 2047).indexOf('taxobox') > 0) {
 		console.log('cutting');
 		var slice = Math.max(formattedText.lastIndexOf('}'),
 										formattedText.lastIndexOf('|'),
@@ -83,7 +88,7 @@ var formatText = function (text, query) {
 		console.log(slice);
 		formattedText = formattedText.slice(slice);
 	}
-	formattedText = formattedText.slice(0, 159);
+	formattedText = formattedText.slice(0, 2047);
 	return formattedText;
 };
 
@@ -160,7 +165,7 @@ var getWPTopics = function (queryObject) {
 	sendMessage(Object.keys(queryObject.parsed.text).map(function (key) {
 		var locSecondSpace = key.indexOf(' ', (key.indexOf(' ') + 1) + 1);
 		return key.slice(0, (locSecondSpace > 0) ? locSecondSpace : key.length);
-	}).join(', ').slice(0, 159), queryObject.from, queryObject);
+	}).join(', ').slice(0, 2047), queryObject.from, queryObject);
 };
 
 var getWPTopic = function (queryObject) {
@@ -175,14 +180,14 @@ var getWPTopic = function (queryObject) {
 			topicKeyIndex = k;
 		}
 	}
-	sendMessage(queryObject.parsed.text[keys[topicKeyIndex]][0].text.slice(0, 159), queryObject);
+	sendMessage(queryObject.parsed.text[keys[topicKeyIndex]][0].text.slice(0, 2047), queryObject);
 };
 
 var getWPFact = function (queryObject) {
 	var keyIndex = Math.floor(Math.random() * Object.keys(queryObject.parsed.text).length);
 	var key = Object.keys(queryObject.parsed.text)[keyIndex];
 	var factIndex = Math.floor(Math.random() * queryObject.parsed.text[key].length);
-	sendMessage(queryObject.parsed.text[key][factIndex].text.slice(0, 159), queryObject);
+	sendMessage(queryObject.parsed.text[key][factIndex].text.slice(0, 2047), queryObject);
 };
 
 var startQuery = function (queryObject) {

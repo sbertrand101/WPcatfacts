@@ -9,7 +9,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/romnempire/WPcatfacts.git"
+    "url": "https://github.com/dtolb/WPcatfacts"
   },
   "keywords": [
     "wikipedia",
@@ -18,9 +18,9 @@
   "author": "Roman",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/romnempire/WPcatfacts/issues"
+    "url": "https://github.com/romnempire/dtolb/issues"
   },
-  "homepage": "https://github.com/romnempire/WPcatfacts",
+  "homepage": "https://github.com/romnempire",
   "dependencies": {
     "bluebird": "^3.3.5",
     "body-parser": "^1.12.4",

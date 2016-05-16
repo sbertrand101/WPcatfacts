@@ -2,7 +2,7 @@
 {
   "name": "Bandwidth Wiki Text",
   "description": "Bandwidth Voice & Messaging API Sample App for Auto Responding SMS & Phone Calls",
-  "repository": "https://github.com/dtolb/WPcatfacts.git",
+  "repository": "https://github.com/BandwidthExamples/WPcatfacts.git",
   "logo": "https://avatars2.githubusercontent.com/u/12057884",
   "keywords": ["node", "bandwidth", "catapult"],
   "env": {

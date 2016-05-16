@@ -1,4 +1,4 @@
 module.exports = {
-    "extends": "xo",
+    "extends": "xo-space",
     "installedESLint": true
 };

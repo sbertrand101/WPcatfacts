@@ -30,5 +30,9 @@
     "request": "^2.57.0",
     "sentence-tokenizer": "0.0.7",
     "wtf_wikipedia": "^0.3.2"
+  },
+  "devDependencies": {
+    "eslint": "^2.10.1",
+    "eslint-config-xo-space": "^0.13.0"
   }
 }

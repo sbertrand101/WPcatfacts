@@ -1,10 +1,10 @@
 
 {
-  "name": "Bandwidth Wiki Text",
-  "description": "Bandwidth Voice & Messaging API Sample App for Auto Responding SMS & Phone Calls",
+  "name": "WP Cat Facts by Roman Myers",
+  "description": "Bandwidth Voice & Messaging API Sample App for Auto Responding SMS from 3rd party API",
   "repository": "https://github.com/BandwidthExamples/WPcatfacts.git",
   "logo": "https://avatars2.githubusercontent.com/u/12057884",
-  "keywords": ["node", "bandwidth", "catapult"],
+  "keywords": ["node", "bandwidth", "catapult", "wikipedia", "api", "cat"],
   "env": {
     "CATAPULT_USER_ID": {
       "description": "Your Catapult User Id"

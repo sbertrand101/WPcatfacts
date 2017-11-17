@@ -1,4 +1,9 @@
 # WPcatfacts
+
+<div> 
+<b>This application is outdated, but will be updated soon!</b><br><br>
+</div> 
+
 App that leverages the [Bandwidth catapult API](http://ap.bandwidth.com//?utm_medium=social&utm_source=github&utm_campaign=dtolb&utm_content=_) to give you succint information about any topic over SMS.  It relies predominantly on Wikipedia, so basically it's a wikipedia interface for when you don't have 3G.
 [![Screen Shot](/readme_images/screenshot.png?raw=true)](https://frozen-springs-97288.herokuapp.com/)
 
